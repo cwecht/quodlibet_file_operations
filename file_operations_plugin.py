@@ -25,6 +25,17 @@ from quodlibet.util.dprint import print_w, print_d
 def create_cmd(operation, source, target):
     return shlex.split(operation.format(quote(source), quote(target)))
 
+def on_operation_error(operation):
+    dialog = Gtk.MessageDialog(
+                    type=Gtk.MessageType.ERROR,
+                    message_format=str(self.song_operation) +
+                    ' finished with an error',
+                    buttons=Gtk.ButtonsType.OK_CANCEL)
+    dialog.set_title('Operation failed!')
+    response = dialog.run()
+    dialog.destroy()
+    return response
+
 
 class FileOperator(JSONObject):
     NAME = _("File Operation")
@@ -69,6 +80,18 @@ class FileOperator(JSONObject):
         self.keeps_file_extension = keeps_file_extension
 
     def operate(self, songs):
+        if not os.path.isdir(self.target_folder):
+            dialog = Gtk.MessageDialog(
+                type=Gtk.MessageType.ERROR,
+                message_format=str(
+                    self.target_folder) +
+                ' does not exist!',
+                buttons=Gtk.ButtonsType.OK)
+            dialog.set_title('Target folder does not exist!')
+            dialog.run()
+            dialog.destroy()
+            return False
+
         target_file_path_pattern = FileFromPattern(
             os.path.join(self.target_folder, self.target_path_pattern))
         source_folder_pattern = Pattern(u"<~dirname>")
@@ -94,18 +117,24 @@ class FileOperator(JSONObject):
             print_d("song_command: " + str(song_command))
             mkdir(target_folder)
 
-            subprocess.call(song_command)
+            ReturnCode = subprocess.call(song_command)
+            if ReturnCode <= 0:
+                if on_operation_error(self.song_operation) == Gtk.ResponseType.CANCEL:
+                    break
 
             if self.file_operation != "":
                 for file_name in [
                         file_name.strip()
                         for file_name in self.additional_files.split(",")]:
                     if os.path.isfile(os.path.join(source_folder, file_name)):
-                        subprocess.call(
+                        ReturnCode = subprocess.call(
                             create_cmd(
                                 self.file_operation, os.path.join(
                                     source_folder, file_name),
                                 os.path.join(target_folder, file_name)))
+                        if ReturnCode <= 0:
+                            if on_operation_error(self.file_operation) == Gtk.ResponseType.CANCEL:
+                                break
 
             self.delete_empty_folders(source_folder)
 
