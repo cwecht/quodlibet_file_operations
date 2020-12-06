@@ -28,7 +28,7 @@ def create_cmd(operation, source, target):
 def on_operation_error(operation):
     dialog = Gtk.MessageDialog(
                     type=Gtk.MessageType.ERROR,
-                    message_format=str(self.song_operation) +
+                    message_format=str(operation) +
                     ' finished with an error',
                     buttons=Gtk.ButtonsType.OK_CANCEL)
     dialog.set_title('Operation failed!')
@@ -158,15 +158,15 @@ class FileOperations(SongsMenuPlugin, PluginConfigMixin):
     COMS_FILE = os.path.join(
         quodlibet.get_user_dir(), 'lists', 'file_operations.json')
     commands = None
-    DEFAULT_COMS = {
+    DEFAULT_COMS = [
         FileOperator(
-            'Move Music',
+            'Copy Music',
             u'Musik',
             u"<albumartist>/<date> <album>/<albumartist> - <album> - <~#track> - <title>",
             "cp {} {}",
             "cp {} {}",
             "cover.jpg,cover.png",
-            True)}
+            True)]
 
     def __init__(self, *args, **kwargs):
         super(FileOperations, self).__init__(*args, **kwargs)
