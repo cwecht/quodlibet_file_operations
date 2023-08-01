@@ -21,6 +21,10 @@ from quodlibet.util.json_data import JSONObject, JSONObjectDict
 from quodlibet.qltk import Icons
 from quodlibet.util.dprint import print_w, print_d
 
+def windowsify(s):
+    for reserved_characeter in ['<', '>', ':', '\"', '\\', '|', '?', '*']:
+      s = s.replace(reserved_characeter, '')
+    return s
 
 def create_cmd(operation, source, target):
     return shlex.split(operation.format(quote(source), quote(target)))
@@ -105,6 +109,7 @@ class FileOperator(JSONObject):
                 break
             source_file_path = song["~filename"]
             target_file_path = target_file_path_pattern.format(song)
+            target_file_path = target_file_path[0:len(target_file_path)] + windowsify(target_file_path[len(target_file_path):-1])
             if not self.keeps_file_extension:
                 target_file_path, _ = os.path.splitext(target_file_path)
 
@@ -118,7 +123,7 @@ class FileOperator(JSONObject):
             mkdir(target_folder)
 
             ReturnCode = subprocess.call(song_command)
-            if ReturnCode <= 0:
+            if ReturnCode != 0:
                 if on_operation_error(self.song_operation) == Gtk.ResponseType.CANCEL:
                     break
 
@@ -132,7 +137,8 @@ class FileOperator(JSONObject):
                                 self.file_operation, os.path.join(
                                     source_folder, file_name),
                                 os.path.join(target_folder, file_name)))
-                        if ReturnCode <= 0:
+                        if ReturnCode != 0:
+                            print("return code: " + str(ReturnCode))
                             if on_operation_error(self.file_operation) == Gtk.ResponseType.CANCEL:
                                 break
 
