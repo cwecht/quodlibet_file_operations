@@ -2,7 +2,6 @@
 
 import os
 import subprocess
-from pipes import quote
 import shlex
 
 from gi.repository import Gtk
@@ -27,7 +26,7 @@ def windowsify(s):
     return s
 
 def create_cmd(operation, source, target):
-    return shlex.split(operation.format(quote(source), quote(target)))
+    return shlex.split(operation.format(shlex.quote(source), shlex.quote(target)))
 
 def on_operation_error(operation):
     dialog = Gtk.MessageDialog(
@@ -68,7 +67,7 @@ class FileOperator(JSONObject):
     def __init__(
             self,
             name,
-            target_folder="",
+            target_folder="/",
             target_path_pattern="",
             song_operation="",
             file_operation="",
@@ -76,7 +75,7 @@ class FileOperator(JSONObject):
             keeps_file_extension=True):
         JSONObject.__init__(self, name)
         self.name = name
-        self.target_folder = target_folder
+        self.target_folder = target_folder if target_folder[-1] == '/' else target_folder + '/'
         self.target_path_pattern = target_path_pattern
         self.song_operation = song_operation
         self.file_operation = file_operation
@@ -109,7 +108,7 @@ class FileOperator(JSONObject):
                 break
             source_file_path = song["~filename"]
             target_file_path = target_file_path_pattern.format(song)
-            target_file_path = target_file_path[0:len(target_file_path)] + windowsify(target_file_path[len(target_file_path):-1])
+            target_file_path = target_file_path[0:len(self.target_folder)] + windowsify(target_file_path[len(self.target_folder):])
             if not self.keeps_file_extension:
                 target_file_path, _ = os.path.splitext(target_file_path)
 
